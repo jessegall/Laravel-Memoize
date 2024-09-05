@@ -1,0 +1,47 @@
+{
+    "name": "jessegall/laravel-memoize",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "JesseGall\\LaravelMemoize\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Jesse Gall",
+            "email": "jesse-gall@hotmail.com"
+        }
+    ],
+    "require": {
+        "laravel/framework": "^10.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.26"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/",
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ],
+        "lint": [
+            "@php vendor/bin/phpstan analyse --verbose --ansi"
+        ]
+    }
+}
