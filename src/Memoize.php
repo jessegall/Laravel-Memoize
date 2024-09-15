@@ -37,7 +37,7 @@ trait Memoize
         self::$memoizeCache = [];
     }
 
-    public function memoizeClearCacheOn(array $events): void
+    public static function memoizeClearCacheOn(array $events): void
     {
         self::$memoizeClearCacheOn = $events;
     }
