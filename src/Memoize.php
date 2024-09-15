@@ -13,18 +13,21 @@ trait Memoize
 {
     private static array $memoizeCache = [];
 
-    private static array $memoizeClearCacheOn = [
-        'saved',
-        'deleted',
-    ];
-
     public static function bootMemoize(): void
     {
         if (is_a(static::class, Model::class, true)) {
-            foreach (self::$memoizeClearCacheOn as $event) {
-                static::registerModelEvent($event, fn(self $self) => $self->memoizeClearCache());
+            foreach (static::memoizeClearCacheOn() as $event) {
+                static::registerModelEvent($event, fn(self $model) => $model->memoizeClearCache());
             }
         }
+    }
+
+    public static function memoizeClearCacheOn(): array
+    {
+        return [
+            'saved',
+            'deleted',
+        ];
     }
 
     public function memoizeClearCache(): void
@@ -35,11 +38,6 @@ trait Memoize
     public static function memoizeClearStaticCache(): void
     {
         self::$memoizeCache = [];
-    }
-
-    public static function memoizeClearCacheOn(array $events): void
-    {
-        self::$memoizeClearCacheOn = $events;
     }
 
     public function memoizeGetCache(): array
@@ -92,4 +90,5 @@ trait Memoize
             default => new GenericSerializer()
         };
     }
+
 }

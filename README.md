@@ -193,22 +193,16 @@ YourClass::memoizeClearStaticCache();
 ### Customizing Cache Clear Events
 
 By default, the cache is cleared on 'saved' and 'deleted' events for Eloquent models. You can customize this by
-calling the `memoizeClearCacheOn` method in your model:
+overriding the `memoizeClearCacheOn` method in your model.
 
 ```php
 class User extends Model
 {
     use Memoize;
 
-    public static function boot()
+    public static function memoizeClearCacheOn(): array
     {
-        parent::boot();
-        
-        static::memoizeClearCacheOn([
-            'saved',
-            'deleted',
-            'custom-event',
-        ]);
+        return ['saved', 'deleted', 'custom-event'];
     }
 
     // ...

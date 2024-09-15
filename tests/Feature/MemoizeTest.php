@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use JesseGall\LaravelMemoize\Memoize;
+use JesseGall\LaravelMemoize\ModelAlreadyBooted;
 use JesseGall\LaravelMemoize\ModelHasNoKey;
 use Orchestra\Testbench\TestCase;
 
@@ -211,6 +212,16 @@ class MemoizeTest extends TestCase
         $this->expectException(ModelHasNoKey::class);
         $model->sumWith(new TestModel());
     }
+
+    public function test_CanChangeClearCacheOnEvents()
+    {
+        $model = TestModelWithCustomClearCacheOn::create(['value' => 1]);
+        $model->value();
+        $this->assertNotEmpty($model->memoizeGetCache());
+        $model->fireCustomEvent();
+        $this->assertEmpty($model->memoizeGetCache());
+    }
+
 }
 
 class TestModel extends Model
@@ -252,6 +263,23 @@ class TestModel extends Model
     public function valueWithNullableArg($arg)
     {
         return $this->memoize(fn() => $this->value);
+    }
+
+}
+
+class TestModelWithCustomClearCacheOn extends TestModel
+{
+
+    protected $table = 'test_models';
+
+    public static function memoizeClearCacheOn(): array
+    {
+        return ['custom-event'];
+    }
+
+    public function fireCustomEvent(): void
+    {
+        $this->fireModelEvent('custom-event');
     }
 }
 
