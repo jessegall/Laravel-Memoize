@@ -8,7 +8,8 @@ helps improve performance by caching the results of method calls for the duratio
 - Easy to implement with a simple trait
 - Works with Eloquent models and regular PHP classes
 - Supports caching based on method arguments
-- Automatically clears cache on model updates
+- Shared cache across multiple instances of the same model (same ID)
+- Automatically clears cache on model updates (or custom events)
 
 ## Installation
 
