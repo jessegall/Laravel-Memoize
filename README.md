@@ -187,7 +187,7 @@ $model->memoizeClearCache();
 To clear the entire static cache:
 
 ```php
-$model->memoizeClearCache(true);
+YourClass::memoizeClearStaticCache();
 ```
 
 ### Customizing Cache Clear Events
