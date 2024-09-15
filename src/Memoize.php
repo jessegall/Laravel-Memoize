@@ -27,13 +27,19 @@ trait Memoize
         }
     }
 
-    public function memoizeClearCache(bool $static = false): void
+    public function memoizeClearCache(): void
     {
-        if ($static) {
-            self::$memoizeCache = [];
-        } else {
-            self::$memoizeCache[$this->memoizeTargetKey()] = [];
-        }
+        self::$memoizeCache[$this->memoizeTargetKey()] = [];
+    }
+
+    public static function memoizeClearStaticCache(): void
+    {
+        self::$memoizeCache = [];
+    }
+
+    public function memoizeClearCacheOn(array $events): void
+    {
+        self::$memoizeClearCacheOn = $events;
     }
 
     public function memoizeGetCache(): array
