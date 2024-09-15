@@ -111,70 +111,78 @@ $result3 = $calculator->complexCalculation($user1);
 $result4 = $calculator->complexCalculation($user2);
 ```
 
-## Warning for Laravel Octane Users
+## Argument Serialization
+
+Laravel Memoize uses an argument serializer to generate unique cache keys based on method arguments. You can customize
+this behavior by overriding the default `ArgumentSerializerFactoryInterface` or by creating your own implementation of
+the `ArgumentSerializerFactoryInterface`.
+
+### Overriding the Default Factory
+
+To override the default argument serializer factory, you can bind your custom implementation to
+the `ArgumentSerializerFactoryInterface` in your app service provider:
+
+```php
+use App\Services\CustomArgumentSerializer;
+use JesseGall\LaravelMemoize\ArgumentSerializerFactoryInterface;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register()
+    {
+        $this->app->bind(ArgumentSerializerFactoryInterface::class, CustomArgumentSerializerFactory::class);
+    }
+}
+```
+
+### Extending the Default Factory
+
+If you want to extend the default `ArgumentSerializerFactory` to add support for additional types or modify existing
+serialization logic, you can create a new class that extends `ArgumentSerializerFactory`:
+
+```php
+use JesseGall\LaravelMemoize\ArgumentSerializerFactory;
+use JesseGall\LaravelMemoize\Serializers\Serializer;
+use App\Models\CustomModel;
+use App\Services\CustomModelSerializer;
+
+class ExtendedArgumentSerializerFactory extends ArgumentSerializerFactory
+{
+    public function make(mixed $arg): Serializer
+    {
+        if ($arg instanceof CustomModel) {
+            return new CustomModelSerializer();
+        }
+
+        return parent::make($arg);
+    }
+}
+```
+
+Then, bind your extended serializer in your app service provider:
+
+```php
+use JesseGall\LaravelMemoize\ArgumentSerializerFactoryInterface;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register()
+    {
+        $this->app->bind(ArgumentSerializerFactoryInterface::class, ExtendedArgumentSerializerFactory::class);
+    }
+}
+```
+
+By customizing the argument serializer, you can control how different types of arguments are serialized for cache key
+generation, allowing for more fine-grained control over the memoization process.
+
+## Cache Configuration
 
 ⚠️ **Important Notice for Laravel Octane Users**
 
 When using Laravel Memoize with Laravel Octane, be aware that memoized results persist across multiple requests handled
 by the same worker. This can lead to improved performance but also risks serving stale data. Implement appropriate
 cache-clearing mechanisms for frequently changing data to ensure freshness.
-
-## How It Works
-
-Laravel Memoize optimizes performance by caching the results of method calls. Here's what you need to know:
-
-1. **Cache Key Generation**: The cache key is generated based on the method name and arguments. This means that
-   different arguments will result in different cache keys, and the results are cached separately for each unique
-   combination of arguments.
-2. **Cache Lifetime**: The cached results are stored for the duration of the request. This means that the cache is
-   cleared automatically at the end of each request, ensuring that the results are fresh for each new request.
-3. **Cache Clearing**: The cache is cleared automatically when the model is saved or deleted. This ensures that the
-   cached results are updated when the model data changes.
-
-## When to Use Memoization
-
-Use memoization for methods that perform time-consuming tasks like complex
-calculations, database queries, or API calls, especially if these methods are called multiple times with the same
-input during a request.
-
-Example scenario where memoization is beneficial:
-
-```php
-class User extends Model
-{
-    use Memoize;
-
-    public function getFullProfileData($includePrivate = false)
-    {
-        return $this->memoize(function() use ($includePrivate) {
-            // Expensive operation: multiple database queries, API calls, etc.
-            $data = $this->profile()->with('posts', 'comments', 'friends')->get();
-            if ($includePrivate) {
-                $data['private_info'] = $this->privateInfo()->get();
-            }
-            return $data;
-        });
-    }
-}
-
-// In your controller or service:
-$user = User::find(1);
-
-// First call - performs the expensive operation
-$profile = $user->getFullProfileData(true);
-
-// Subsequent calls - returns the cached result instantly
-$sameProfile = $user->getFullProfileData(true);
-$alsoSameProfile = $user->getFullProfileData(true);
-
-// Different parameters - performs the operation again
-$publicProfile = $user->getFullProfileData(false);
-```
-
-In this scenario, the expensive `getFullProfileData` method is only executed twice (once for `true` and once
-for `false`), regardless of how many times it's called, significantly improving performance.
-
-## Advanced Usage
 
 ### Clearing Cache
 

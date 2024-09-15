@@ -13,11 +13,11 @@ class ModelSerializer implements Serializer
 
     public function serialize(mixed $value): string
     {
-        if (! $value->getKey()) {
+        if (! $key = $value->getKey()) {
             throw new ModelHasNoKey();
         }
 
-        return get_class($value) . ':' . $value->getKey();
+        return get_class($value) . ':' . $key;
     }
 
 }

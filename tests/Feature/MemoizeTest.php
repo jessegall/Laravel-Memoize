@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use JesseGall\LaravelMemoize\ArgumentSerializerFactoryInterface;
 use JesseGall\LaravelMemoize\Memoize;
 use JesseGall\LaravelMemoize\ModelAlreadyBooted;
 use JesseGall\LaravelMemoize\ModelHasNoKey;
+use JesseGall\LaravelMemoize\Serializers\Serializer;
 use Orchestra\Testbench\TestCase;
 
 class MemoizeTest extends TestCase
@@ -220,6 +222,28 @@ class MemoizeTest extends TestCase
         $this->assertNotEmpty($model->memoizeGetCache());
         $model->fireCustomEvent();
         $this->assertEmpty($model->memoizeGetCache());
+    }
+
+    public function test_CanBindCustomArgumentSerializerFactory()
+    {
+        $this->app->bind(ArgumentSerializerFactoryInterface::class, fn() => new class implements ArgumentSerializerFactoryInterface {
+
+            public function make(mixed $arg): Serializer
+            {
+                return new class implements Serializer {
+                    public function serialize(mixed $arg): string
+                    {
+                        return 'custom-serializer';
+                    }
+                };
+            }
+
+        });
+
+        $model = TestModel::create(['value' => 1]);
+        $model->valueWithArg('foo');
+        [$key] = array_keys($model->memoizeGetCache());
+        $this->assertStringContainsString('custom-serializer', $key);
     }
 
 }

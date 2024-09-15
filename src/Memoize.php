@@ -3,11 +3,9 @@
 namespace JesseGall\LaravelMemoize;
 
 use Closure;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Database\Eloquent\Model;
-use JesseGall\LaravelMemoize\Serializers\ClosureSerializer;
-use JesseGall\LaravelMemoize\Serializers\GenericSerializer;
 use JesseGall\LaravelMemoize\Serializers\ModelSerializer;
-use JesseGall\LaravelMemoize\Serializers\Serializer;
 
 trait Memoize
 {
@@ -32,17 +30,17 @@ trait Memoize
 
     public function memoizeClearCache(): void
     {
-        self::$memoizeCache[$this->memoizeTargetKey()] = [];
+        static::$memoizeCache[$this->memoizeTargetKey()] = [];
     }
 
     public static function memoizeClearStaticCache(): void
     {
-        self::$memoizeCache = [];
+        static::$memoizeCache = [];
     }
 
     public function memoizeGetCache(): array
     {
-        return self::$memoizeCache[$this->memoizeTargetKey()] ?? [];
+        return static::$memoizeCache[$this->memoizeTargetKey()] ?? [];
     }
 
     private function memoize(Closure $callback): mixed
@@ -53,13 +51,7 @@ trait Memoize
     private function memoizeTargetKey(): string
     {
         if ($this instanceof Model) {
-            $key = $this->getKey();
-
-            if (! $key) {
-                throw new ModelHasNoKey();
-            }
-
-            return static::class . ':' . $this->getKey();
+            return (new ModelSerializer)->serialize($this);
         }
 
         return static::class;
@@ -74,21 +66,20 @@ trait Memoize
 
     private function memoizeSerializeArgs(array $args): string
     {
-        $args = array_map(
-            fn(mixed $arg) => $this->memoizeGetArgumentSerializer($arg)->serialize($arg),
-            $args
-        );
+        $factory = $this->memoizeArgumentSerializerFactory();
 
-        return implode(':', $args);
+        $serializedArgs = array_map(fn(mixed $arg) => $factory->make($arg)->serialize($arg), $args);
+
+        return implode(':', $serializedArgs);
     }
 
-    private function memoizeGetArgumentSerializer(mixed $arg): Serializer
+    private function memoizeArgumentSerializerFactory(): ArgumentSerializerFactoryInterface
     {
-        return match (true) {
-            $arg instanceof Model => new ModelSerializer(),
-            $arg instanceof Closure => new ClosureSerializer(),
-            default => new GenericSerializer()
-        };
+        if (app()->has(ArgumentSerializerFactoryInterface::class)) {
+            return app(ArgumentSerializerFactoryInterface::class);
+        }
+
+        return new ArgumentSerializerFactory();
     }
 
 }
