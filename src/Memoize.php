@@ -48,9 +48,17 @@ trait Memoize
 
     private function memoizeTargetKey(): string
     {
-        return $this instanceof Model
-            ? static::class . ':' . $this->getKey()
-            : static::class;
+        if ($this instanceof Model) {
+            $key = $this->getKey();
+
+            if (! $key) {
+                throw new ModelHasNoKey();
+            }
+
+            return static::class . ':' . $this->getKey();
+        }
+
+        return static::class;
     }
 
     private function memoizeMethodKey(int $backtraceLimit = 3): string

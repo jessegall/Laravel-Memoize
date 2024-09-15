@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use JesseGall\LaravelMemoize\Memoize;
+use JesseGall\LaravelMemoize\ModelHasNoKey;
 use Orchestra\Testbench\TestCase;
 
 class MemoizeTest extends TestCase
@@ -113,7 +114,8 @@ class MemoizeTest extends TestCase
 
         $model->memoizeClearCache(true);
         $this->assertEmpty($model->memoizeGetCache());
-        $this->assertEquals(1, $model->value());
+        $model->updateQuietly(['value' => 2]);
+        $this->assertEquals(2, $model->value());
     }
 
     public function test_MemoizeWorksWithComplexArguments()
@@ -129,27 +131,39 @@ class MemoizeTest extends TestCase
 
     public function test_MemoizeWorksWithModelArguments()
     {
-        $model1 = TestModel::create(['value' => 1]);
-        $model2 = TestModel::create(['value' => 2]);
+        $target = TestModel::create(['value' => 1]);
 
-        $this->assertEquals(3, $model1->sumWith($model2));
-        $model2->updateQuietly(['value' => 3]);
-        $this->assertEquals(3, $model1->sumWith($model2));
-
+        $model1 = TestModel::create(['value' => 2]);
+        $model2 = TestModel::create(['value' => 3]);
         $model3 = TestModel::create(['value' => 4]);
-        $this->assertEquals(5, $model1->sumWith($model3));
+
+        $this->assertEquals(3, $target->sumWith($model1));
+        $this->assertEquals(4, $target->sumWith($model2));
+        $this->assertEquals(5, $target->sumWith($model3));
+
+        $target->updateQuietly(['value' => 2]);
+
+        $this->assertEquals(3, $target->sumWith($model1));
+        $this->assertEquals(4, $target->sumWith($model2));
+        $this->assertEquals(5, $target->sumWith($model3));
+
+        $target->update(['value' => 3]);
+
+        $this->assertEquals(5, $target->sumWith($model1));
+        $this->assertEquals(6, $target->sumWith($model2));
+        $this->assertEquals(7, $target->sumWith($model3));
     }
 
     public function test_MemoizeWorksWithClosureArguments()
     {
         $model = TestModel::create(['value' => 1]);
-        $closure = function() { return 5; };
+        $closure = function () { return 5; };
 
         $this->assertEquals(6, $model->sumWithClosure($closure));
         $model->updateQuietly(['value' => 2]);
         $this->assertEquals(6, $model->sumWithClosure($closure));
 
-        $differentClosure = function() { return 10; };
+        $differentClosure = function () { return 10; };
         $this->assertEquals(12, $model->sumWithClosure($differentClosure));
     }
 
@@ -182,6 +196,20 @@ class MemoizeTest extends TestCase
         $model->updateQuietly(['value' => 2]);
         $this->assertEquals(1, $model->valueWithNullableArg(null));
         $this->assertEquals(2, $model->valueWithNullableArg('not null'));
+    }
+
+    public function test_ExceptionIsThrown_WhenMemoizingNonExistentModel()
+    {
+        $model = new TestModel();
+        $this->expectException(ModelHasNoKey::class);
+        $model->value();
+    }
+
+    public function test_ExceptionIsThrown_WhenMemoizingMethodWithNonExistingModel()
+    {
+        $model = TestModel::create(['value' => 1]);
+        $this->expectException(ModelHasNoKey::class);
+        $model->sumWith(new TestModel());
     }
 }
 
@@ -235,14 +263,14 @@ class MemoizeTestHelper
 
     public function incrementAndGet()
     {
-        return $this->memoize(function() {
+        return $this->memoize(function () {
             return ++$this->counter;
         });
     }
 
     public function incrementAndGetWithArg($arg)
     {
-        return $this->memoize(function() {
+        return $this->memoize(function () {
             return ++$this->counter;
         });
     }
