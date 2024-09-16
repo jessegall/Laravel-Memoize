@@ -82,8 +82,8 @@ public function expensiveCalculation($param1, $param2)
 }
 ```
 
-The result of the callback is memoized based on the arguments provided. This means that calls to the same method with
-the same arguments will return the cached result.
+The result of the callback is memoized based on the arguments provided to the method that calls `memoize`. 
+In this example, the result of `expensiveCalculation` is cached based on the values of `$param1` and `$param2`. 
 
 ## Memoization and Models
 
