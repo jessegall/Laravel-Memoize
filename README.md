@@ -1,10 +1,14 @@
 # Laravel Memoize
 
-Laravel Memoize is a trait that provides method-level caching for your Laravel Eloquent models and other PHP classes. It
-helps improve performance by caching the results of method calls based on their arguments, reducing redundant expensive
-operations.
-
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jessegall/laravel-memoize.svg?style=flat-square)](https://packagist.org/packages/jessegall/laravel-memoize)
+
+Laravel Memoize is a library that provides method-level caching for your Laravel Eloquent models and other PHP classes.
+It improves performance by caching the results of method calls based on their arguments.
+
+### Memoization
+
+[Memoization](https://en.wikipedia.org/wiki/Memoization) is a technique used to cache the results of function calls and
+return the cached result when the same inputs occur again.
 
 ## Features
 
@@ -79,7 +83,7 @@ public function expensiveCalculation($param1, $param2)
 ```
 
 The result of the callback is memoized based on the arguments provided. This means that calls to the same method with
-the same arguments will return the cached result, avoiding redundant expensive operations.
+the same arguments will return the cached result.
 
 ## Memoization and Models
 
@@ -91,7 +95,7 @@ When using Laravel Memoize with Eloquent models, here's how it works:
 This means:
 
 - Different instances of the same model (same ID) will share the same memoized results.
-- Freshly queried models will use existing memoized results if available.
+- Freshly queried models will use existing cached results if available.
 
 Here's how it looks in practice:
 
@@ -259,7 +263,7 @@ serialization logic, you can create a new class that extends `ArgumentSerializer
 use JesseGall\LaravelMemoize\ArgumentSerializerFactory;
 use JesseGall\LaravelMemoize\Serializers\Serializer;
 use App\Models\CustomModel;
-use App\Services\CustomModelSerializerInterface;
+use App\Services\CustomModelSerializer;
 
 class ExtendedArgumentSerializerFactory extends ArgumentSerializerFactory
 {
