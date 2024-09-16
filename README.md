@@ -5,7 +5,7 @@
 Laravel Memoize is a library that provides method-level caching for your Laravel Eloquent models and other PHP classes.
 It improves performance by caching the results of method calls based on their arguments.
 
-### Memoization
+## Memoization
 
 [Memoization](https://en.wikipedia.org/wiki/Memoization) is a technique used to cache the results of function calls and
 return the cached result when the same inputs occur again.
