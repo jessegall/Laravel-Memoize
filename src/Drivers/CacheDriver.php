@@ -5,54 +5,72 @@ namespace JesseGall\LaravelMemoize\Drivers;
 class CacheDriver implements DriverInterface
 {
 
-    const CACHE_KEY = 'memoize';
-
     public function __construct(
         private readonly int $ttl = 60,
     ) {}
 
-    public function getAll(): array
+    public function get(string $target = null, string $method = null): mixed
     {
-        return cache()->get(self::CACHE_KEY, []);
+        if ($target === null) {
+            return array_map(fn(string $target) => $this->get($target), $this->targets());
+        }
+
+        if ($method === null) {
+            return array_map(fn(string $method) => $this->get($target, $method), $this->methods($target));
+        }
+
+        return cache()->get($this->targetMethodKey($target, $method));
     }
 
-    public function getCacheForTarget(string $targetKey): array
+    public function set(string $target, string $method, mixed $value): void
     {
-        return $this->getAll()[$targetKey] ?? [];
+        cache()->put($this->targetKey($target), [...$this->methods($target), $method], $this->ttl);
+
+        cache()->put($this->targetMethodKey($target, $method), $value, $this->ttl);
     }
 
-    public function getCachedMethodValue(string $targetKey, string $methodKey): mixed
+    public function has(string $target, string $method): bool
     {
-        return $this->getCacheForTarget($targetKey)[$methodKey] ?? null;
+        return cache()->has($this->targetMethodKey($target, $method));
     }
 
-    public function setCachedMethodValue(string $targetKey, string $methodKey, mixed $value): void
+    public function forget(string $target = null): void
     {
-        $cache = $this->getAll();
-        $cache[$targetKey][$methodKey] = $value;
-        $this->put($cache);
+        $targets = $target === null ? $this->targets() : [$target];
+
+        foreach ($targets as $target) {
+            $targetKey = $this->targetKey($target);
+            $methods = cache()->get($targetKey, []);
+            foreach ($methods as $method) {
+                cache()->forget($this->targetMethodKey($target, $method));
+            }
+            cache()->forget($targetKey);
+        }
     }
 
-    public function hasCachedMethod(string $targetKey, string $methodKey): bool
+    protected function key(): string
     {
-        return isset($this->getCacheForTarget($targetKey)[$methodKey]);
+        return self::class;
     }
 
-    public function clearAll(): void
+    protected function targetKey(string $target): string
     {
-        cache()->forget(self::CACHE_KEY);
+        return $this->key() . ':' . $target;
     }
 
-    public function clearTarget(string $targetKey): void
+    protected function targetMethodKey(string $target, string $method): string
     {
-        $cache = $this->getAll();
-        unset($cache[$targetKey]);
-        $this->put($cache);
+        return $this->key() . ':' . $target . ':' . $method;
     }
 
-    private function put(array $cache): void
+    private function targets(): array
     {
-        cache()->put(self::CACHE_KEY, $cache, $this->ttl);
+        return cache()->get($this->key(), []);
+    }
+
+    public function methods(string $target): array
+    {
+        return cache()->get($this->targetKey($target), []);
     }
 
 }

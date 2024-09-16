@@ -11,8 +11,8 @@ operations.
 - Easy to implement with a simple trait
 - Works with Eloquent models and regular PHP classes
 - Supports caching based on method arguments
-- Shared cache across multiple instances of the same model (same ID)
-- Automatically clears cache on model updates (or custom events)
+- Shared cache across multiple instances of the same model
+- Automatically invalidates cache on model updates (or custom events)
 - Customizable cache drivers for different storage options
 - Customizable argument serialization for fine-grained control
 
@@ -23,7 +23,7 @@ operations.
 * [Installation](#installation)
 * [Usage](#usage)
 * [Memoization and Models](#memoization-and-models)
-* [Cache Drivers](#cache-drivers)
+* [Memoize Drivers](#memoize-drivers)
     + [Available Drivers](#available-drivers)
     + [Using Drivers](#using-drivers)
     + [Creating a Custom Driver](#creating-a-custom-driver)
@@ -31,9 +31,9 @@ operations.
 * [Argument Serialization](#argument-serialization)
     + [Overriding the Default Factory](#overriding-the-default-factory)
     + [Extending the Default Factory](#extending-the-default-factory)
-* [Cache Configuration](#cache-configuration)
+* [Cache](#cache)
     + [Clearing Cache](#clearing-cache)
-    + [Customizing Cache Clear Events](#customizing-cache-clear-events)
+    + [Customizing Cache Invalidation Events](#customizing-cache-invalidation-events)
 * [Testing](#testing)
 * [Contributing](#contributing)
 * [License](#license)
@@ -138,25 +138,23 @@ $result3 = $calculator->complexCalculation($user1);
 $result4 = $calculator->complexCalculation($user2);
 ```
 
-## Cache Drivers
+## Memoize Drivers
 
-Laravel Memoize uses drivers to store cached method results. You can choose the most appropriate storage method for your
-application's needs.
+Laravel Memoize can use different drivers to store cached results. It comes with two built-in drivers: `MemoryDriver`
+and `CacheDriver`.
 
 ### Available Drivers
 
-1. **MemoryDriver (Default)**: Stores cached results in memory for the duration of the request. This is the fastest
-   option but doesn't persist data between requests.
+1. **MemoryDriver (Default)**: Stores cached results in memory for the duration of the request.
 
-2. **CacheDriver**: Uses Laravel's cache system, allowing you to persist memoized results across requests and
-   potentially across multiple servers.
+2. **CacheDriver**: Utilizes Laravel's caching system to store memoized results. This allows the results to persist
+   between different requests and to be shared among multiple servers that are connected to the same cache storage.
 
 ⚠️ **Important Notice for Laravel Octane Users**
 
 When using the `MemoryDriver` together with Laravel Octane, be aware that memoized results persist across multiple
-requests handled
-by the same worker. This can lead to improved performance but also risks serving stale data. Implement appropriate
-cache-clearing mechanisms for frequently changing data to ensure freshness.
+requests handled by the same worker. This can lead to improved performance but also risks serving stale data. Implement
+appropriate cache-clearing mechanisms for frequently changing data to ensure freshness.
 
 ### Using Drivers
 
@@ -261,11 +259,11 @@ serialization logic, you can create a new class that extends `ArgumentSerializer
 use JesseGall\LaravelMemoize\ArgumentSerializerFactory;
 use JesseGall\LaravelMemoize\Serializers\Serializer;
 use App\Models\CustomModel;
-use App\Services\CustomModelSerializer;
+use App\Services\CustomModelSerializerInterface;
 
 class ExtendedArgumentSerializerFactory extends ArgumentSerializerFactory
 {
-    public function make(mixed $arg): Serializer
+    public function make(mixed $arg): SerializerInterface
     {
         if ($arg instanceof CustomModel) {
             return new CustomModelSerializer();
@@ -293,33 +291,27 @@ class AppServiceProvider extends ServiceProvider
 By customizing the argument serializer, you can control how different types of arguments are serialized for cache key
 generation, allowing for more fine-grained control over the memoization process.
 
-## Cache Configuration
+## Cache
 
 ### Clearing Cache
 
 To manually clear the cache for a specific instance:
 
 ```php
-$model->memoizeClearCache();
+$model->memoizeForget();
 ```
 
-To clear the entire static cache:
+### Customizing Cache Invalidation Events
 
-```php
-YourClass::memoizeClearStaticCache();
-```
-
-### Customizing Cache Clear Events
-
-By default, the cache is cleared on 'saved' and 'deleted' events for Eloquent models. You can customize this by
-overriding the `memoizeClearCacheOn` method in your model.
+By default, the cache of the model is cleared automatically when a model is 'saved' or deleted.
+You can customize the events that trigger cache invalidation by overriding the `memoizeCacheInvalidationEvents` method:
 
 ```php
 class User extends Model
 {
     use Memoize;
 
-    public static function memoizeClearCacheOn(): array
+    public static function memoizeCacheInvalidationEvents(): array
     {
         return ['saved', 'deleted', 'custom-event'];
     }

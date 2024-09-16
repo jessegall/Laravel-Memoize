@@ -14,8 +14,8 @@ trait Memoize
     public static function bootMemoize(): void
     {
         if (is_a(static::class, Model::class, true)) {
-            foreach (static::memoizeClearCacheOn() as $event) {
-                static::registerModelEvent($event, fn(self $model) => $model->memoizeClearCache());
+            foreach (static::memoizeCacheInvalidationEvents() as $event) {
+                static::registerModelEvent($event, fn(self $model) => $model->memoizeForget());
             }
         }
     }
@@ -25,7 +25,7 @@ trait Memoize
         return new MemoryDriver();
     }
 
-    public static function memoizeClearCacheOn(): array
+    public static function memoizeCacheInvalidationEvents(): array
     {
         return [
             'saved',
@@ -33,33 +33,27 @@ trait Memoize
         ];
     }
 
-    public function memoizeClearCache(): void
+    public function memoizeForget(): void
     {
-        $this->memoizeDriver()->clearTarget($this->memoizeTargetKey());
+        $this->memoizeDriver()->forget($this->memoizeTargetKey());
     }
 
-    public static function memoizeClearStaticCache(): void
+    public function memoizeGet(): array
     {
-        static::memoizeDriver()->clearAll();
-    }
-
-    public function memoizeGetCache(): array
-    {
-        return self::memoizeDriver()->getCacheForTarget($this->memoizeTargetKey());
+        return self::memoizeDriver()->get($this->memoizeTargetKey());
     }
 
     private function memoize(Closure $callback): mixed
     {
         $driver = static::memoizeDriver();
-
         $targetKey = $this->memoizeTargetKey();
         $methodKey = $this->memoizeMethodKey();
 
-        if (! $driver->hasCachedMethod($targetKey, $methodKey)) {
-            $driver->setCachedMethodValue($targetKey, $methodKey, $callback());
+        if (! $driver->has($targetKey, $methodKey)) {
+            $driver->set($targetKey, $methodKey, $callback());
         }
 
-        return $driver->getCachedMethodValue($targetKey, $methodKey);
+        return $driver->get($targetKey, $methodKey);
     }
 
     private function memoizeTargetKey(): string

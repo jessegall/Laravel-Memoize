@@ -5,18 +5,12 @@ namespace JesseGall\LaravelMemoize\Drivers;
 interface DriverInterface
 {
 
-    public function getAll(): array;
+    public function get(string $target = null, string $method = null): mixed;
 
-    public function getCacheForTarget(string $targetKey): array;
+    public function set(string $target, string $method, mixed $value): void;
 
-    public function getCachedMethodValue(string $targetKey, string $methodKey): mixed;
+    public function has(string $target, string $method): bool;
 
-    public function setCachedMethodValue(string $targetKey, string $methodKey, mixed $value): void;
-
-    public function hasCachedMethod(string $targetKey, string $methodKey): bool;
-
-    public function clearAll(): void;
-
-    public function clearTarget(string $targetKey): void;
+    public function forget(string $target = null): void;
 
 }

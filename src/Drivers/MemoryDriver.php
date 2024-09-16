@@ -7,38 +7,36 @@ class MemoryDriver implements DriverInterface
 
     private static array $cache = [];
 
-    public function getAll(): array
+    public function get(string $target = null, string $method = null): mixed
     {
-        return self::$cache;
+        if ($target === null) {
+            return self::$cache;
+        }
+
+        if ($method === null) {
+            return self::$cache[$target] ?? [];
+        }
+
+        return self::$cache[$target][$method] ?? null;
     }
 
-    public function getCacheForTarget(string $targetKey): array
+    public function set(string $target, string $method, mixed $value): void
     {
-        return self::$cache[$targetKey] ?? [];
+        self::$cache[$target][$method] = $value;
     }
 
-    public function getCachedMethodValue(string $targetKey, string $methodKey): mixed
+    public function has(string $target, string $method): bool
     {
-        return self::$cache[$targetKey][$methodKey] ?? null;
+        return isset(self::$cache[$target][$method]);
     }
 
-    public function setCachedMethodValue(string $targetKey, string $methodKey, mixed $value): void
+    public function forget(string $target = null): void
     {
-        self::$cache[$targetKey][$methodKey] = $value;
+        if ($target === null) {
+            self::$cache = [];
+        } else {
+            unset(self::$cache[$target]);
+        }
     }
 
-    public function hasCachedMethod(string $targetKey, string $methodKey): bool
-    {
-        return isset(self::$cache[$targetKey][$methodKey]);
-    }
-
-    public function clearAll(): void
-    {
-        self::$cache = [];
-    }
-
-    public function clearTarget(string $targetKey): void
-    {
-        unset(self::$cache[$targetKey]);
-    }
 }
