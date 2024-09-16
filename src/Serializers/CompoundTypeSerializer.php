@@ -2,7 +2,7 @@
 
 namespace JesseGall\LaravelMemoize\Serializers;
 
-class CompoundTypeSerializer implements Serializer
+class CompoundTypeSerializer implements SerializerInterface
 {
 
     public function serialize(mixed $value): string

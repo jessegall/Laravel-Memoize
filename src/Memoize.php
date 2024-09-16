@@ -3,13 +3,13 @@
 namespace JesseGall\LaravelMemoize;
 
 use Closure;
-use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Database\Eloquent\Model;
+use JesseGall\LaravelMemoize\Drivers\DriverInterface;
+use JesseGall\LaravelMemoize\Drivers\MemoryDriver;
 use JesseGall\LaravelMemoize\Serializers\ModelSerializer;
 
 trait Memoize
 {
-    private static array $memoizeCache = [];
 
     public static function bootMemoize(): void
     {
@@ -18,6 +18,11 @@ trait Memoize
                 static::registerModelEvent($event, fn(self $model) => $model->memoizeClearCache());
             }
         }
+    }
+
+    public static function memoizeDriver(): DriverInterface
+    {
+        return new MemoryDriver();
     }
 
     public static function memoizeClearCacheOn(): array
@@ -30,22 +35,31 @@ trait Memoize
 
     public function memoizeClearCache(): void
     {
-        static::$memoizeCache[$this->memoizeTargetKey()] = [];
+        $this->memoizeDriver()->clearTarget($this->memoizeTargetKey());
     }
 
     public static function memoizeClearStaticCache(): void
     {
-        static::$memoizeCache = [];
+        static::memoizeDriver()->clearAll();
     }
 
     public function memoizeGetCache(): array
     {
-        return static::$memoizeCache[$this->memoizeTargetKey()] ?? [];
+        return self::memoizeDriver()->getCacheForTarget($this->memoizeTargetKey());
     }
 
     private function memoize(Closure $callback): mixed
     {
-        return self::$memoizeCache[$this->memoizeTargetKey()][$this->memoizeMethodKey()] ??= $callback();
+        $driver = static::memoizeDriver();
+
+        $targetKey = $this->memoizeTargetKey();
+        $methodKey = $this->memoizeMethodKey();
+
+        if (! $driver->hasCachedMethod($targetKey, $methodKey)) {
+            $driver->setCachedMethodValue($targetKey, $methodKey, $callback());
+        }
+
+        return $driver->getCachedMethodValue($targetKey, $methodKey);
     }
 
     private function memoizeTargetKey(): string

@@ -2,11 +2,11 @@
 
 namespace JesseGall\LaravelMemoize;
 
-use JesseGall\LaravelMemoize\Serializers\Serializer;
+use JesseGall\LaravelMemoize\Serializers\SerializerInterface;
 
 interface ArgumentSerializerFactoryInterface
 {
 
-    public function make(mixed $arg): Serializer;
+    public function make(mixed $arg): SerializerInterface;
 
 }

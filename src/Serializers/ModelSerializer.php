@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use JesseGall\LaravelMemoize\ModelHasNoKey;
 
 /**
- * @implements Serializer<Model>
+ * @implements SerializerInterface<Model>
  */
-class ModelSerializer implements Serializer
+class ModelSerializer implements SerializerInterface
 {
 
     public function serialize(mixed $value): string

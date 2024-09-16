@@ -2,7 +2,7 @@
 
 namespace JesseGall\LaravelMemoize\Serializers;
 
-class GenericSerializer implements Serializer
+class GenericSerializer implements SerializerInterface
 {
 
     public function serialize(mixed $value): string

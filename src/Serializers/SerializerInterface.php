@@ -5,7 +5,7 @@ namespace JesseGall\LaravelMemoize\Serializers;
 /**
  * @template T
  */
-interface Serializer
+interface SerializerInterface
 {
 
     /**

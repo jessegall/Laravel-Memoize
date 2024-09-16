@@ -5,9 +5,9 @@ namespace JesseGall\LaravelMemoize\Serializers;
 use Closure;
 
 /**
- * @implements Serializer<Closure>
+ * @implements SerializerInterface<Closure>
  */
-class ClosureSerializer implements Serializer
+class ClosureSerializer implements SerializerInterface
 {
 
     /**

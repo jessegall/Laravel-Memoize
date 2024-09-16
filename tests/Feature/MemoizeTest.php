@@ -10,6 +10,7 @@ use JesseGall\LaravelMemoize\Memoize;
 use JesseGall\LaravelMemoize\ModelAlreadyBooted;
 use JesseGall\LaravelMemoize\ModelHasNoKey;
 use JesseGall\LaravelMemoize\Serializers\Serializer;
+use JesseGall\LaravelMemoize\Serializers\SerializerInterface;
 use Orchestra\Testbench\TestCase;
 
 class MemoizeTest extends TestCase
@@ -228,9 +229,9 @@ class MemoizeTest extends TestCase
     {
         $this->app->bind(ArgumentSerializerFactoryInterface::class, fn() => new class implements ArgumentSerializerFactoryInterface {
 
-            public function make(mixed $arg): Serializer
+            public function make(mixed $arg): SerializerInterface
             {
-                return new class implements Serializer {
+                return new class implements SerializerInterface {
                     public function serialize(mixed $arg): string
                     {
                         return 'custom-serializer';
