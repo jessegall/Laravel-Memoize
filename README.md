@@ -1,7 +1,10 @@
 # Laravel Memoize
 
 Laravel Memoize is a trait that provides method-level caching for your Laravel Eloquent models and other PHP classes. It
-helps improve performance by caching the results of method calls for the duration of a request.
+helps improve performance by caching the results of method calls based on their arguments, reducing redundant expensive
+operations.
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/jessegall/laravel-memoize.svg?style=flat-square)](https://packagist.org/packages/jessegall/laravel-memoize)
 
 ## Features
 
@@ -10,6 +13,30 @@ helps improve performance by caching the results of method calls for the duratio
 - Supports caching based on method arguments
 - Shared cache across multiple instances of the same model (same ID)
 - Automatically clears cache on model updates (or custom events)
+- Customizable cache drivers for different storage options
+- Customizable argument serialization for fine-grained control
+
+---
+
+## Table of Contents
+
+* [Installation](#installation)
+* [Usage](#usage)
+* [Memoization and Models](#memoization-and-models)
+* [Cache Drivers](#cache-drivers)
+    + [Available Drivers](#available-drivers)
+    + [Using Drivers](#using-drivers)
+    + [Creating a Custom Driver](#creating-a-custom-driver)
+    + [Switching Drivers Dynamically](#switching-drivers-dynamically)
+* [Argument Serialization](#argument-serialization)
+    + [Overriding the Default Factory](#overriding-the-default-factory)
+    + [Extending the Default Factory](#extending-the-default-factory)
+* [Cache Configuration](#cache-configuration)
+    + [Clearing Cache](#clearing-cache)
+    + [Customizing Cache Clear Events](#customizing-cache-clear-events)
+* [Testing](#testing)
+* [Contributing](#contributing)
+* [License](#license)
 
 ## Installation
 
@@ -52,7 +79,7 @@ public function expensiveCalculation($param1, $param2)
 ```
 
 The result of the callback is memoized based on the arguments provided. This means that calls to the same method with
-the same arguments will return the cached result, avoiding redundant expensive operations within the same request.
+the same arguments will return the cached result, avoiding redundant expensive operations.
 
 ## Memoization and Models
 
@@ -109,6 +136,96 @@ $calculator = new Calculator();
 // $result3 and $result4 are the same, calculation done only once
 $result3 = $calculator->complexCalculation($user1);
 $result4 = $calculator->complexCalculation($user2);
+```
+
+## Cache Drivers
+
+Laravel Memoize uses drivers to store cached method results. You can choose the most appropriate storage method for your
+application's needs.
+
+### Available Drivers
+
+1. **MemoryDriver (Default)**: Stores cached results in memory for the duration of the request. This is the fastest
+   option but doesn't persist data between requests.
+
+2. **CacheDriver**: Uses Laravel's cache system, allowing you to persist memoized results across requests and
+   potentially across multiple servers.
+
+⚠️ **Important Notice for Laravel Octane Users**
+
+When using the `MemoryDriver` together with Laravel Octane, be aware that memoized results persist across multiple
+requests handled
+by the same worker. This can lead to improved performance but also risks serving stale data. Implement appropriate
+cache-clearing mechanisms for frequently changing data to ensure freshness.
+
+### Using Drivers
+
+By default, Laravel Memoize uses the `MemoryDriver`. To use a different driver, override the `memoizeDriver` method in
+your model or class:
+
+```php
+use JesseGall\LaravelMemoize\Drivers\CacheDriver;
+use JesseGall\LaravelMemoize\Drivers\DriverInterface;
+
+class YourModel extends Model
+{
+    use Memoize;
+
+    public static function memoizeDriver(): DriverInterface
+    {
+        return new CacheDriver(ttl: 60); // Cache results for 60 seconds
+    }
+    
+}
+```
+
+### Creating a Custom Driver
+
+You can create your own custom driver by implementing the `DriverInterface`:
+
+1. Create your custom driver class:
+
+```php
+use JesseGall\LaravelMemoize\Drivers\DriverInterface;
+
+class CustomDriver implements DriverInterface
+{
+    // Implement the required methods
+}
+```
+
+2. Use your custom driver in your model or class:
+
+```php
+class YourModel extends Model
+{
+    use Memoize;
+
+    public static function memoizeDriver(): DriverInterface
+    {
+        return new CustomDriver();
+    }
+}
+```
+
+### Switching Drivers Dynamically
+
+You can switch drivers dynamically based on certain conditions:
+
+```php
+class YourModel extends Model
+{
+    use Memoize;
+
+    public static function memoizeDriver(): DriverInterface
+    {
+        if (config('app.env') === 'production') {
+            return new CacheDriver();
+        }
+
+        return new MemoryDriver();
+    }
+}
 ```
 
 ## Argument Serialization
@@ -177,12 +294,6 @@ By customizing the argument serializer, you can control how different types of a
 generation, allowing for more fine-grained control over the memoization process.
 
 ## Cache Configuration
-
-⚠️ **Important Notice for Laravel Octane Users**
-
-When using Laravel Memoize with Laravel Octane, be aware that memoized results persist across multiple requests handled
-by the same worker. This can lead to improved performance but also risks serving stale data. Implement appropriate
-cache-clearing mechanisms for frequently changing data to ensure freshness.
 
 ### Clearing Cache
 
